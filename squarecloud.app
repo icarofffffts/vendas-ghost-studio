@@ -1,0 +1,6 @@
+DISPLAY_NAME=Nery Dev
+MAIN=index.js
+VERSION=recommended
+MEMORY=256
+AUTORESTART=true
+DESCRIPTION=Nery Dev
