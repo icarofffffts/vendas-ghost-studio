@@ -38,37 +38,42 @@ async function Painel(interaction, client) {
   .setTimestamp()
 
 
+  const ticketButton = process.env.TICKET_ENABLED === 'true' ? new ButtonBuilder()
+    .setCustomId("painelconfigticket")
+    .setLabel('Ticket')
+    .setEmoji(`<:etiqueta_ghost:1327003124350587012>`)
+    .setStyle(1)
+    .setDisabled(false) : null;
+
+  const buttons = [
+    new ButtonBuilder()
+      .setCustomId("painelconfigvendas")
+      .setLabel('Loja')
+      .setEmoji(`<:site:1336204752035512370>`)
+      .setStyle(1)
+      .setDisabled(false),
+
+    new ButtonBuilder()
+      .setCustomId("painelconfigbv")
+      .setLabel('Boas Vindas')
+      .setEmoji(`:CaixaWQ:1267889222598266984>`)
+      .setStyle(1)
+      .setDisabled(false),
+
+    new ButtonBuilder()
+      .setCustomId("eaffaawwawa")
+      .setLabel('Ações Automaticas')
+      .setEmoji(`<:configbot:1319725163415208017> `)
+      .setStyle(2)
+      .setDisabled(false),
+  ];
+
+  if (ticketButton) {
+    buttons.splice(1, 0, ticketButton);
+  }
+
   const row2 = new ActionRowBuilder()
-    .addComponents(
-      new ButtonBuilder()
-        .setCustomId("painelconfigvendas")
-        .setLabel('Loja')
-        .setEmoji(`<:site:1336204752035512370>`)
-        .setStyle(1)
-        .setDisabled(false),
-
-      new ButtonBuilder()
-        .setCustomId("painelconfigticket")
-        .setLabel('Ticket')
-        .setEmoji(`<:etiqueta_ghost:1327003124350587012>`)
-        .setStyle(1)
-        .setDisabled(false),
-
-      new ButtonBuilder()
-        .setCustomId("painelconfigbv")
-        .setLabel('Boas Vindas')
-        .setEmoji(`:CaixaWQ:1267889222598266984>`)
-        .setStyle(1)
-        .setDisabled(false),
-
-      new ButtonBuilder()
-        .setCustomId("eaffaawwawa")
-        .setLabel('Ações Automaticas')
-        .setEmoji(`<:configbot:1319725163415208017> `)
-        .setStyle(2)
-        .setDisabled(false),
-
-    )
+    .addComponents(...buttons)
 
   const row3 = new ActionRowBuilder()
     .addComponents(

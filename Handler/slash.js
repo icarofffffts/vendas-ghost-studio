@@ -11,6 +11,10 @@ module.exports = {
         fs.readdir(`././ComandosSlash/${subpasta}/`, (erro, arquivos) => {
           arquivos.forEach(arquivo => {
             if (!arquivo?.endsWith('.js')) return;
+
+            const isTicketFile = ['archive_ticket.js', 'close_ticket.js'].includes(arquivo);
+            if (isTicketFile && process.env.TICKET_ENABLED !== 'true') return;
+
             arquivo = require(`../ComandosSlash/${subpasta}/${arquivo}`);
             if (!arquivo?.name) return;
             client.slashCommands.set(arquivo?.name, arquivo);

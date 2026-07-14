@@ -24,7 +24,7 @@ module.exports = {
 
         if (interaction.type == Discord.InteractionType.ModalSubmit) {
 
-            if (interaction.customId == 'sdaju11111231idsj1233js123dua123') {
+            if (process.env.TICKET_ENABLED === 'true' && interaction.customId == 'sdaju11111231idsj1233js123dua123') {
                 let NOME = interaction.fields.getTextInputValue('tokenMP');
                 let PREDESC = interaction.fields.getTextInputValue('tokenMP2');
                 let DESC = interaction.fields.getTextInputValue('tokenMP3');
@@ -86,7 +86,7 @@ module.exports = {
 
             }
 
-            if (interaction.customId == '0-89du0awd8awdaw8daw') {
+            if (process.env.TICKET_ENABLED === 'true' && interaction.customId == '0-89du0awd8awdaw8daw') {
 
                 let TITULO = interaction.fields.getTextInputValue('tokenMP');
                 let DESC = interaction.fields.getTextInputValue('tokenMP2');
@@ -314,6 +314,7 @@ module.exports = {
             }
         }
 
+      if (process.env.TICKET_ENABLED === 'true') {
         let valorticket
         if (interaction.isButton() && interaction.customId.startsWith('AbrirTicket_')) {
             valorticket = interaction.customId.replace('AbrirTicket_', '');
@@ -322,6 +323,7 @@ module.exports = {
             valorticket = interaction.values[0]
             CreateTicket(interaction, valorticket)
         }
+      }
 
         if (interaction.isSelectMenu()) {
 
@@ -346,7 +348,7 @@ module.exports = {
 
             }
 
-            if (interaction.customId == 'deletarticketsfunction') {
+            if (process.env.TICKET_ENABLED === 'true' && interaction.customId == 'deletarticketsfunction') {
                 const valordelete = interaction.values
                 for (const iterator of valordelete) {
                     tickets.delete(`tickets.funcoes.${iterator}`)
@@ -358,7 +360,7 @@ module.exports = {
 
         if (interaction.isChannelSelectMenu()) {
 
-            if (interaction.customId == 'canalpostarticket') {
+            if (process.env.TICKET_ENABLED === 'true' && interaction.customId == 'canalpostarticket') {
                 await interaction.reply({ content: `🔄 | Aguarde estamos criando sua mensagem!`, ephemeral: true });
                 await CreateMessageTicket(interaction, interaction.values[0], client)
                 interaction.editReply({ content: `✅ | Mensagem criada com sucesso!`, ephemeral: true });
@@ -368,7 +370,7 @@ module.exports = {
 
         if (interaction.isButton()) {
 
-            if (interaction.customId == 'sincronizarticket') {
+            if (process.env.TICKET_ENABLED === 'true' && interaction.customId == 'sincronizarticket') {
                 await interaction.reply({ content: `🔄 | Aguarde estamos atualizando suas mensagem!`, ephemeral: true });
                 await Checkarmensagensticket(client)
                 interaction.editReply({ content: `✅ | Mensagens atualizada com sucesso!`, ephemeral: true });
@@ -376,7 +378,7 @@ module.exports = {
 
 
 
-            if (interaction.customId == 'arquivar') {
+            if (process.env.TICKET_ENABLED === 'true' && interaction.customId == 'arquivar') {
 
                 if (!interaction.member.roles.cache.has(configuracao.get('ConfigRoles.cargoadm')) && !interaction.member.roles.cache.has(configuracao.get('ConfigRoles.cargosup'))) return interaction.reply({ content: `❌ | Você não tem permissão para fazer isso!`, ephemeral: true });
 
@@ -387,7 +389,7 @@ module.exports = {
 
             const { MessageActionRow, MessageButton } = require('discord.js');
 
-            if (interaction.customId == 'assumir') {
+            if (process.env.TICKET_ENABLED === 'true' && interaction.customId == 'assumir') {
                 let ticketId = interaction.message.id;
                 if (tickets[ticketId] && tickets[ticketId].hasStaffInteracted) {
                     return interaction.reply({ content: '❌ | Este ticket já foi atendido.', ephemeral: true });
@@ -431,7 +433,7 @@ module.exports = {
                 }
             }                                
 
-              if (interaction.customId === 'deletar') {
+              if (process.env.TICKET_ENABLED === 'true' && interaction.customId === 'deletar') {
                 if (!interaction.member.roles.cache.has(configuracao.get('ConfigRoles.cargoadm')) &&
                     !interaction.member.roles.cache.has(configuracao.get('ConfigRoles.cargosup'))) {
                     return interaction.reply({ content: '❌ | Você não tem permissão para fazer isso!', ephemeral: true });
@@ -465,7 +467,7 @@ module.exports = {
                 }
             }
 
-            if (interaction.customId === 'lembrar123') {
+            if (process.env.TICKET_ENABLED === 'true' && interaction.customId === 'lembrar123') {
                 if (!interaction.member.roles.cache.has(configuracao.get('ConfigRoles.cargoadm')) && !interaction.member.roles.cache.has(configuracao.get('ConfigRoles.cargosup'))) {
                     return interaction.reply({ content: `❌ | Você não tem permissão para fazer isso!`, ephemeral: true });
                 }
@@ -508,7 +510,7 @@ module.exports = {
                 }
             }            
 
-            if (interaction.customId == `postarticket`) {
+            if (process.env.TICKET_ENABLED === 'true' && interaction.customId == `postarticket`) {
                 const ggg = tickets.get(`tickets.funcoes`)
                 const ggg2 = tickets.get(`tickets.aparencia`)
 
@@ -531,7 +533,7 @@ module.exports = {
 
 
 
-            if (interaction.customId == 'remfuncaoticket') {
+            if (process.env.TICKET_ENABLED === 'true' && interaction.customId == 'remfuncaoticket') {
 
 
                 const ggg = tickets.get(`tickets.funcoes`)
@@ -798,7 +800,7 @@ module.exports = {
             }
 
 
-            if (interaction.customId.startsWith('addfuncaoticket')) {
+            if (process.env.TICKET_ENABLED === 'true' && interaction.customId.startsWith('addfuncaoticket')) {
 
                 const dd = tickets.get('tickets.funcoes')
                
@@ -860,7 +862,7 @@ module.exports = {
                 await interaction.showModal(modalaAA);
 
             }
-            if (interaction.customId.startsWith('definiraparencia')) {
+            if (process.env.TICKET_ENABLED === 'true' && interaction.customId.startsWith('definiraparencia')) {
 
 
 
@@ -920,7 +922,7 @@ module.exports = {
 
             }
 
-            if (interaction.customId.startsWith('painelconfigticket')) {
+            if (process.env.TICKET_ENABLED === 'true' && interaction.customId.startsWith('painelconfigticket')) {
 
 
                 painelTicket(interaction)
