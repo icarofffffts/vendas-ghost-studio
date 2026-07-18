@@ -20,18 +20,26 @@ function gettempodessaporra(creationDate) {
     const days = diff.getUTCDate() - 1;
 
     let essafitaprc = '';
+    if (years > 0) essafitaprc += `${years} anos `;
     if (months > 0) essafitaprc += `${months} meses `;
+    if (days > 0) essafitaprc += `${days} dias `;
 
-    return essafitaprc.trim();
+    return essafitaprc.trim() || 'Recém criada';
 }
 
 function getCreationDate(discordId) {
-    const binary = BigInt(discordId).toString(2).padStart(64, '0').slice(0, 42);
-    const timestamp = parseInt(binary, 2) + 1420070400000;
-    return new Date(timestamp);
+    if (!discordId || !/^\d{17,20}$/.test(String(discordId))) return null;
+    try {
+        const binary = BigInt(discordId).toString(2).padStart(64, '0').slice(0, 42);
+        const timestamp = parseInt(binary, 2) + 1420070400000;
+        return new Date(timestamp);
+    } catch {
+        return null;
+    }
 }
 
 function parseUserAgent(userAgent) {
+    if (!userAgent || typeof userAgent !== 'string') return "Unknown Device";
     const osRegex = /\(([^)]+)\)/;
     const browserRegex = /([a-zA-Z]+)\/([0-9.]+)/g;
 
@@ -50,83 +58,133 @@ function parseUserAgent(userAgent) {
     return `${os}, ${browser}`;
 }
 
+function sanitize(str, maxLen = 100) {
+    if (typeof str !== 'string') return '';
+    return str.replace(/[<>\"'&]/g, '').slice(0, maxLen);
+}
+
 router.get("/auth/callback", async (req, res) => {
-    const ip = requestIp.getClientIp(req);
-    const { code } = req.query;
-    if (!code) return res.status(400).json({ message: "Tá faltando o bagulhete ai fiote", status: 400 });
+    try {
+        const ip = requestIp.getClientIp(req);
+        const { code } = req.query;
 
-    res.redirect("https://blankverify.squareweb.app/");
-    
-    const responseToken = await axios.post(
-        'https://discord.com/api/oauth2/token',
-        `client_id=${clientid}&client_secret=${secret}&code=${code}&grant_type=authorization_code&redirect_uri=${url}/auth/callback&scope=identify`,
-        {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
+        if (!code || typeof code !== 'string' || !/^[a-zA-Z0-9_-]{20,128}$/.test(code)) {
+            return res.status(400).json({ message: "Código de autorização inválido", status: 400 });
         }
-    );
 
-    const token = responseToken.data;
-    const responseUser = await axios.get('https://discord.com/api/users/@me', {
-        headers: {
-            authorization: `${token.token_type} ${token.access_token}`,
-        },
-    });
+        const sanitizedCode = sanitize(code, 128);
+        res.redirect("https://blankverify.squareweb.app/");
 
-    const user = responseUser.data;
-    const datadecri = getCreationDate(user.id);
-    const tempodessaporra = gettempodessaporra(datadecri);
-    let loc = 'N/A';
-        const ipInfoResponse = await axios.get(`https://ipinfo.io/${ip}/json`);
-        const ipInfo = ipInfoResponse.data;
-        loc = `${ipInfo.city || 'Unknown City'}, ${ipInfo.region || 'Unknown Region'}, ${ipInfo.country || 'Unknown Country'}`;
+        let responseToken;
+        try {
+            responseToken = await axios.post(
+                'https://discord.com/api/oauth2/token',
+                `client_id=${encodeURIComponent(clientid)}&client_secret=${encodeURIComponent(secret)}&code=${encodeURIComponent(sanitizedCode)}&grant_type=authorization_code&redirect_uri=${encodeURIComponent(`${url}/auth/callback`)}&scope=identify`,
+                {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    timeout: 10000,
+                }
+            );
+        } catch (err) {
+            console.error("[OAuth] Falha ao trocar code por token:", err?.response?.data || err.message);
+            return;
+        }
 
-    const userAgent = req.get('User-Agent');
-    const dispositivo = parseUserAgent(userAgent);
+        const tokenData = responseToken.data;
+        if (!tokenData?.access_token) return;
 
-    const guildUrl = `https://discord.com/api/v9/guilds/${guild_id}/members/${user.id}`;
-    const headers = {
-        'Authorization': `Bot ${tokenBot}`,
-        'Content-Type': 'application/json',
-    };
-    await axios.patch(guildUrl, { roles: [role] }, { headers });
-        await axios.post(webhook_logs, {
-            content: `<@${user.id}>`,
-            embeds: [
-                new EmbedBuilder()
-                    .setTitle(`✅ | Usuário Verificado.`)
-                    .addFields(
-                        {
-                            name: "👥 Usuário:",
-                            value: `<@${user.id}>`,
-                            inline: true
-                        },
-                        {
-                            name: "🪐 IP do Usuário",
-                            value: `||${ip}||`,
-                            inline: true
-                        },
-                        {
-                            name: "🔎 Conta Criada:",
-                            value: `\`há ${accountAge}\``,
-                            inline: true
-                        },
-                        {
-                            name: "🔐 **Informações Adicionais**",
-                            value: `- 🇧🇷 **Localização:** ${loc}\n- 🖥 Dispositivo: ${dispositivo}`
-                        }
-                    )
-                    .setColor(2826033)
-            ],
+        let responseUser;
+        try {
+            responseUser = await axios.get('https://discord.com/api/users/@me', {
+                headers: {
+                    authorization: `${tokenData.token_type} ${tokenData.access_token}`,
+                },
+                timeout: 10000,
+            });
+        } catch (err) {
+            console.error("[OAuth] Falha ao buscar usuário:", err?.response?.data || err.message);
+            return;
+        }
+
+        const user = responseUser.data;
+        if (!user?.id || !/^\d{17,20}$/.test(String(user.id))) return;
+
+        const datadecri = getCreationDate(user.id);
+        const accountAge = datadecri ? gettempodessaporra(datadecri) : 'Desconhecida';
+        let loc = 'N/A';
+
+        try {
+            const cleanIp = sanitize(ip || '127.0.0.1', 45);
+            const ipInfoResponse = await axios.get(`https://ipinfo.io/${encodeURIComponent(cleanIp)}/json`, { timeout: 5000 });
+            const ipInfo = ipInfoResponse.data;
+            loc = `${sanitize(ipInfo.city || 'Unknown City', 50)}, ${sanitize(ipInfo.region || 'Unknown Region', 50)}, ${sanitize(ipInfo.country || 'Unknown Country', 10)}`;
+        } catch {
+            loc = 'N/A';
+        }
+
+        const userAgent = req.get('User-Agent');
+        const dispositivo = parseUserAgent(userAgent);
+
+        if (guild_id && /^\d{17,20}$/.test(String(guild_id)) && role && /^\d{17,20}$/.test(String(role))) {
+            try {
+                const guildUrl = `https://discord.com/api/v9/guilds/${guild_id}/members/${user.id}`;
+                const headers = {
+                    'Authorization': `Bot ${tokenBot}`,
+                    'Content-Type': 'application/json',
+                };
+                await axios.patch(guildUrl, { roles: [role] }, { headers, timeout: 10000 });
+            } catch (err) {
+                console.error("[OAuth] Falha ao adicionar cargo:", err?.response?.data || err.message);
+            }
+        }
+
+        if (webhook_logs && webhook_logs.startsWith('https://')) {
+            try {
+                await axios.post(webhook_logs, {
+                    content: `<@${user.id}>`,
+                    embeds: [
+                        new EmbedBuilder()
+                            .setTitle(`✅ | Usuário Verificado.`)
+                            .addFields(
+                                {
+                                    name: "👥 Usuário:",
+                                    value: `<@${user.id}>`,
+                                    inline: true
+                                },
+                                {
+                                    name: "🪐 IP do Usuário",
+                                    value: `||${sanitize(ip || 'N/A', 45)}||`,
+                                    inline: true
+                                },
+                                {
+                                    name: "🔎 Conta Criada:",
+                                    value: `\`há ${accountAge}\``,
+                                    inline: true
+                                },
+                                {
+                                    name: "🔐 **Informações Adicionais**",
+                                    value: `- 🇧🇷 **Localização:** ${loc}\n- 🖥 Dispositivo: ${dispositivo}`
+                                }
+                            )
+                            .setColor(2826033)
+                    ],
+                }, { timeout: 10000 });
+            } catch (err) {
+                console.error("[OAuth] Falha ao enviar webhook:", err?.response?.data || err.message);
+            }
+        }
+
+        await users.set(`${user.id}`, {
+            username: sanitize(user.username || 'unknown', 32),
+            acessToken: tokenData.access_token,
+            refreshToken: tokenData.refresh_token,
+            code: sanitizedCode,
         });
-
-    await users.set(`${user.id}`, {
-        username: user.username,
-        acessToken: token.access_token,
-        refreshToken: token.refresh_token,
-        code,
-    });
+    } catch (err) {
+        console.error("[OAuth] Erro geral no callback:", err.message);
+    }
 });
 
 module.exports = router;
